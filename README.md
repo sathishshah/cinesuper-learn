@@ -22,10 +22,11 @@ The optional Google Fonts stylesheet falls back to system sans-serif when unavai
 - `dist/style.css`: responsive layout and visual design.
 - `dist/lessons.js`: course content, small teaching dataset, glossary.
 - `dist/app.js`: routes, exercises, feedback, and persistence.
+- `dist/interactive.js`: hands-on labs that replace two app.js labs. Lesson 2: an animated 1-, 2- and 3-tier request simulator, a drag-to-sort scenario activity, and the abstraction-levels check. Lesson 4: a 1:1 / 1:N / M:N playground with real rows, plus a drag-and-drop CineSuper ER builder with crow's-foot notation that converts the diagram into tables and SQL as students edit it.
 - `.openai/hosting.json`: Sites identity and static deployment settings.
 
 ## Validation
 
 `tests/learning-flow.cjs` uses the locally supplied Playwright library and installed Chrome in an isolated browser. Adjust the two environment-specific library/browser paths for another machine. It verifies every lab and quiz, wrong-answer feedback, primary/foreign key and domain failures, projection, joins, lossless/lossy outputs, persistence, glossary search, export/reset, and mobile overflow. All checks passed on 9 October 2026. No browser JavaScript errors were observed.
 
-Publication defaults to owner-private. Change sharing deliberately before distributing the link to students.
+Live site: https://sathishshah.github.io/cinesuper-learn/ — deployed from `dist/` by `.github/workflows/pages.yml` on every push to main.
