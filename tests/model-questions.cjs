@@ -1,0 +1,34 @@
+const {chromium}=require('/Users/sathish/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+const BASE=process.env.BASE||'http://127.0.0.1:4173/';
+(async()=>{const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});const page=await browser.newPage({viewport:{width:1440,height:1000}});let errors=[];page.on('pageerror',e=>errors.push(e.message));
+const t=async s=>await page.locator(s).innerText(),click=s=>page.locator(s).click();
+await page.goto(BASE+'#questions');await page.locator('.mq-question').first().waitFor();
+assert.equal(await page.locator('.mq-question').count(),7);assert.equal(await page.locator('.mq-part').count(),28);
+assert.equal(await page.locator('.mq-ans:visible').count(),0,'answers hidden at start');
+await click('[data-part="q1a"] .mq-reveal');assert.match(await t('[data-part="q1a"] .mq-ans'),/organised collection/);
+await click('[data-part="q1a"] [data-rate="knew"]');await click('[data-part="q1b"] .mq-reveal');await click('[data-part="q1b"] [data-rate="revise"]');
+assert.match(await t('#mq-count'),/1 of 28 parts known · 1 to revise/);
+await page.check('#mq-revise-only');assert.equal(await page.locator('.mq-part:visible').count(),1);await page.uncheck('#mq-revise-only');
+/* Q1 */await page.locator('#act-q1 .mq-crow').first().locator('[data-cat="db"]').click();assert.match(await t('#act-q1 .mq-crow >> nth=0'),/Not quite/);
+const q1=[['data'],['data'],['db'],['db'],['dbms'],['dbms'],['dbms']];for(let i=0;i<7;i++)await page.locator('#act-q1 .mq-crow').nth(i).locator(`[data-cat="${q1[i]}"]`).click();
+assert.match(await t('#act-q1 .feedback >> nth=0'),/All correct/);
+await click('#q1-move');assert.match(await t('#q1-sim'),/Inconsistent/);await click('[data-mode="dbms"]');await click('#q1-move');assert.match(await t('#q1-sim'),/Updated once/);
+/* Q2 */await click('[data-level="internal"]');assert.match(await t('#q2-info'),/B\+ tree/);
+for(const [i,c] of ['phy','phy','log','log','phy'].entries())await page.locator('#act-q2 .mq-crow').nth(i).locator(`[data-cat="${c}"]`).click();assert.match(await t('#act-q2'),/All correct/);
+/* Q3 */assert.equal(await t('#q3-deg'),'4');assert.equal(await t('#q3-card'),'3');await click('#q3-addrow');await click('#q3-addcol');assert.equal(await t('#q3-deg'),'5');assert.equal(await t('#q3-card'),'4');
+await click('[data-try="abc"]');assert.match(await t('#q3-dom'),/not in the domain/);await click('[data-try="-5000"]');assert.match(await t('#q3-dom'),/greater than 0/);await click('[data-try="25000"]');assert.match(await t('#q3-dom'),/valid value/);
+/* Q4 */await click('[data-key="Name"]');assert.match(await t('#q4-key'),/duplicates \(Priya/);assert.equal(await page.locator('#q4-cust td.dup').count(),2);await click('[data-key="CustID"]');assert.match(await t('#q4-key'),/Best choice/);
+await page.selectOption('#q4-cid','C09');await click('#q4-add');assert.match(await t('#q4-fk'),/referential integrity/);await page.selectOption('#q4-cid','C02');await click('#q4-add');assert.equal(await page.locator('#q4-orders tbody tr').count(),3);await click('#q4-del');assert.match(await t('#q4-fk'),/orphan/);
+/* Q5 */for(let i=0;i<5;i++){const svg=await page.locator('#q5-quiz svg').getAttribute('aria-label');const name={'Rectangle labelled STUDENT':'entity','Diamond ENROLLS between STUDENT and COURSE':'relationship','STUDENT connected to underlined ellipse RollNo':'key','STUDENT connected to double ellipse PhoneNo':'multi','Name ellipse split into FirstName and LastName ellipses':'composite'}[svg];await click(`#q5-quiz [data-sym="${name}"]`);await page.waitForTimeout(1250);}
+assert.match(await t('#q5-quiz'),/5 \/ 5/);
+/* Q6 */for(let i=0;i<4;i++)await click('#q6-next');assert.match(await t('#q6-cap'),/Step 5/);assert.equal(await page.locator('#q6-next').isDisabled(),true);
+await click('[data-card="1:N"]');assert.match(await t('#q6-fb'),/P1 has Anu and Bala/);await click('[data-card="M:N"]');assert.match(await t('#q6-map'),/ENROLLMENT/);
+/* Q7 */await click('[data-place="dept"]');assert.match(await t('#q7-out'),/not atomic/);await click('[data-place="emp"]');assert.match(await t('#q7-out'),/Correct/);
+await page.selectOption('#q7-d','D9');await click('#q7-add');assert.match(await t('#q7-fb'),/does not exist/);await page.selectOption('#q7-d','D1');await click('#q7-add');assert.equal(await page.locator('#q7-emp tbody tr').count(),4);
+/* deep link + persistence + show all */await page.goto(BASE+'#questions-q6');await page.reload();await page.locator('#mq-q6').waitFor();assert.match(await t('#mq-count'),/1 of 28/);
+await click('#mq-show-all');assert.equal(await page.locator('.mq-ans:visible').count(),28);
+await page.screenshot({path:'/private/tmp/mq-desktop.png',fullPage:true});
+await page.setViewportSize({width:390,height:844});for(const h of ['questions','home','lesson-3']){await page.goto(BASE+'#'+h);await page.waitForTimeout(200);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'mobile overflow at '+h);}
+await page.goto(BASE+'#questions');await click('#mq-show-all');await page.screenshot({path:'/private/tmp/mq-mobile.png',fullPage:true});
+assert.deepEqual(errors,[]);console.log('PASS model questions: 7 questions, 28 parts, all activities, ratings, deep link, mobile, no errors');await browser.close();})().catch(e=>{console.error(e);process.exit(1)});
